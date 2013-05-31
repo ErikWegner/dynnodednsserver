@@ -1,4 +1,5 @@
 // Copyright (c) 2010 Tom Hughes-Croucher
+// Copyright (c) 2013 Erik Wegner
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +22,57 @@
 
 var sys = require('sys'),
     Buffer = require('buffer').Buffer,
-    dgram = require('dgram');
+    dgram = require('dgram'),
+    fs = require('fs'),
+    http = require("http")
+    https = require("https"),
+    url = require("url");
 
 host = 'localhost';
-port = 9999;
+port = 1053; // dns-port
+updateportinsecure = 1090; // http-port
+updateportsecure = 1091; // https-port
+
+/* certificates for https */
+var options = {
+  key: fs.readFileSync('server.key'),
+  cert: fs.readFileSync('server.crt')
+};
+
+var datafile = 'dyndnsdata';
+
+var records2plain = function(r)
+{
+    var o = Array();
+    for (d in r) {
+        var y = new Object();
+        y.host = d;
+        y.user = r[d].user;
+        y.pass = r[d].pass;
+        y.ip = num2dot(r[d]['in']['a'][0].rdata);
+        o.push(y);
+    }
+    return JSON.stringify(o);
+}
+
+// http://stackoverflow.com/questions/8105629/ip-addresses-stored-as-int-results-in-overflow
+var dot2num = function(dot) 
+{
+    var d = dot.split('.');
+    return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
+}
+
+var num2dot = function(num) 
+{
+    var d = num%256;
+    for (var i = 3; i > 0; i--) 
+    { 
+        num = Math.floor(num/256);
+        d = num%256 + '.' + d;
+    }
+    return d;
+}
+
 
 // slices a single byte into bits
 // assuming only single bytes
@@ -369,6 +417,7 @@ var findRecords = function(qname, qtype, qclass) {
     if (qtype === '*') {
         throw new Error('Wildcard not support');
     } else {
+        if (!(domain in records)) return Array();
         var rr = records[domain][qclass][qtype];
     }
 
@@ -401,34 +450,80 @@ server.addListener('error', function (e) {
   throw e;
 });
 
-
-//
-//TODO create records database
-
+// Records database
 records = {};
-records['tomhughescroucher.com'] = {};
-records['tomhughescroucher.com']['in'] = {};
-records['tomhughescroucher.com']['in']['a'] = [];
 
-var r = {};
-r.qname = domainToQname('tomhughescroucher.com');
-r.qtype = 1;
-r.qclass = 1;
-r.ttl = 1;
-r.rdlength = 4;
-r.rdata = 0xBC8A0009;
+if (fs.existsSync(datafile)) {
+    fs.readFile(datafile, function (err, data) {
+        if (err) throw err;
+        plaindata = JSON.parse(data);
+        for (var i = 0; i<plaindata.length;i++) {
+            var host = plaindata[i].host;
+            records[host] = {};
+            records[host]['user'] = plaindata[i].user;
+            records[host]['pass'] = plaindata[i].pass;
+            records[host]['in'] = {};
+            records[host]['in']['a'] = [];
+            
+            var r = {};
+            r.qname = domainToQname(host);
+            r.qtype = 1;
+            r.qclass = 1;
+            r.ttl = 1;
+            r.rdlength = 4;
+            r.rdata = dot2num(plaindata[i].ip);
+            
+            records[host]['in']['a'].push(r);
+        }
+        records2plain(records);
+    });
+} else {
+    console.log("WARNING: No base records found. No update is possible!");
+    return;
+}
 
-records['tomhughescroucher.com']['in']['a'].push(r);
+var processUpdate = function(request, response)
+{
+    var uri = url.parse(request.url).pathname;
+    var query = url.parse(request.url, true).query;
+    var ok = false;
+    
+    if (uri == "/nic/update") {
+        var auth = request.headers['authorization']; // auth is in base64(username:password) so we need to decode the base64        
+        var tmp = auth.split(' '); // Split on a space, the original auth looks like "Basic Y2hhcmxlczoxMjM0NQ==" and we need the 2nd part
+        var buf = new Buffer(tmp[1], 'base64'); // create a buffer and tell it the data coming in is base64
+        var plain_auth = buf.toString(); // read it back out as a string
+        var creds = plain_auth.split(':'); // split on a ':'
+        var username = creds[0];
+        var password = creds[1];
+        
+        if (query.hostname in records) {
+            var record = records[query.hostname];
+            if (username == record.user && password == record.pass) {
+                record['in']['a'][0].rdata = dot2num(query.myip);
+                fs.writeFile(datafile, records2plain(records), function (err) {
+                    if (err) throw err;
+                    console.log("Update for " + query.hostname);
+                });
+                ok = true;
+            }
+        }
+        
+    }
+    
+    if (ok) {
+        response.writeHead(200);
+        response.write("OK good", "binary");
+        response.end();
+    } else {
+        response.writeHead(200);
+        response.write("Something went wrong. Sorry.", "binary");
+        response.end();
+    }
+};
 
-r = {};
-r.qname = domainToQname('tomhughescroucher.com');
-r.qtype = 1;
-r.qclass = 1;
-r.ttl = 1;
-r.rdlength = 4;
-r.rdata = 0x7F000001;
-
-records['tomhughescroucher.com']['in']['a'].push(r);
+http.createServer(processUpdate).listen(updateportinsecure);
+https.createServer(options, processUpdate).listen(updateportsecure);
 
 server.bind(port, host);
 console.log('Started server on ' + host + ':' + port);
