@@ -1,15 +1,15 @@
-Auf Basis von Node.js bietet die Software einen DNS-Server an, der über das DynDNS-Protokoll aktualisiert wird.
+ÔªøAuf Basis von Node.js bietet die Software einen DNS-Server an, der √ºber das DynDNS-Protokoll aktualisiert wird.
 
 Dieses Programm bietet die folgenden Funktionen:
 
-* IPv4-DNS-Server zur Auflösung eines Hostnamens in eine IPv4-Adresse (A-Record)
-* Aktualisierung der Datensätze
- + über das DynDNS-Protokoll
- + Prüfung einer hostnamenabhängigen Benutzer-Passwort-Kombination
- + über HTTP und HTTPS (wenn aktiviert)
-* Ablage der Datensätze in einer Datei, um beim Neustart alle Datensätze bereit zu haben
+* IPv4-DNS-Server zur Aufl√∂sung eines Hostnamens in eine IPv4-Adresse (A-Record)
+* Aktualisierung der Datens√§tze
+ + √ºber das DynDNS-Protokoll
+ + Pr√ºfung einer hostnamenabh√§ngigen Benutzer-Passwort-Kombination
+ + √ºber HTTP und HTTPS (wenn aktiviert)
+* Ablage der Datens√§tze in einer Datei, um beim Neustart alle Datens√§tze bereit zu haben
 
-Für den Betrieb wird die Datei dyndnsdata benötigt. Darin werden die möglichen DNS-Einträge konfiguriert:
+F√ºr den Betrieb wird die Datei dyndnsdata ben√∂tigt. Darin werden die m√∂glichen DNS-Eintr√§ge konfiguriert:
 
 ```
 [
@@ -22,15 +22,15 @@ In der Datei dnd.js gibt es folgende Parameter:
 
 ## port
 
-Angabe des UDP-Ports für den DNS-Server (Standard 53).
+Angabe des UDP-Ports f√ºr den DNS-Server (Standard 53).
 
 ## updateportinsecure
 
-Angabe des TCP-Ports für den HTTP-Update-Dienst.
+Angabe des TCP-Ports f√ºr den HTTP-Update-Dienst.
 
 ## updateportsecure
 
-Angabe des TCP-Ports für den HTTPS-Update-Dienst.
+Angabe des TCP-Ports f√ºr den HTTPS-Update-Dienst.
 
 ## usehttps
 
@@ -45,8 +45,8 @@ var options = {
 };
 ```
 
-Benennt die Zertifikats- und Schlüsseldatei für den HTTPS-Server.
+Benennt die Zertifikats- und Schl√ºsseldatei f√ºr den HTTPS-Server.
 
 ## datafile
 
-Gibt den Dateinamen für die Datei an, in der die möglichen DNS-Einträge, Benutzernamen, Passwörter und gegenwärtigen IP-Adressen stehen.
+Gibt den Dateinamen f√ºr die Datei an, in der die m√∂glichen DNS-Eintr√§ge, Benutzernamen, Passw√∂rter und gegenw√§rtigen IP-Adressen stehen.
