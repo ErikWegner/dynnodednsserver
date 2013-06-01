@@ -1,1 +1,4 @@
-[{"host":"samplehost","user":"username","pass":"passw0rd","ip":"8.9.2.1"}]
+[
+{"host":"samplehost","user":"username","pass":"passw0rd","ip":"8.9.2.1"},
+{"host":"secondhost","user":"alice","pass":"p4ssw0rd","ip":"123.4.5.6"}
+]

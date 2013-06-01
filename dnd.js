@@ -24,7 +24,7 @@ var sys = require('sys'),
     Buffer = require('buffer').Buffer,
     dgram = require('dgram'),
     fs = require('fs'),
-    http = require("http")
+    http = require("http"),
     https = require("https"),
     url = require("url");
 
@@ -32,12 +32,15 @@ host = 'localhost';
 port = 1053; // dns-port
 updateportinsecure = 1090; // http-port
 updateportsecure = 1091; // https-port
+usehttps = false;
 
-/* certificates for https */
-var options = {
-  key: fs.readFileSync('server.key'),
-  cert: fs.readFileSync('server.crt')
-};
+if (usehttps) {
+    /* certificates for https */
+    var options = {
+      key: fs.readFileSync('server.key'),
+      cert: fs.readFileSync('server.crt')
+    };
+}
 
 var datafile = 'dyndnsdata';
 
@@ -523,7 +526,9 @@ var processUpdate = function(request, response)
 };
 
 http.createServer(processUpdate).listen(updateportinsecure);
-https.createServer(options, processUpdate).listen(updateportsecure);
+if (usehttps) {
+    https.createServer(options, processUpdate).listen(updateportsecure);
+}
 
 server.bind(port, host);
 console.log('Started server on ' + host + ':' + port);
